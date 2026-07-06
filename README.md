@@ -108,6 +108,23 @@ void handleSetScrollTextColor();
 void handleSetScrollTextRainbow();
 ```
 
+## Branch
+
+| Branch | Contenuto |
+|---|---|
+| `main` | Porting PlatformIO del codice originale: tutto il codice in un unico `src/main.cpp` (~6700 righe), fedele allo sketch Arduino di partenza |
+| `refactor/split-main` | Refactor strutturale: lo stesso codice suddiviso in ~58 file per area funzionale |
+
+### Perché esiste `refactor/split-main`
+
+Il codice originale concentra tutto in `main.cpp`: 12 effetti, web server con ~2000 righe di HTML embedded, gestione EEPROM, testo scorrevole, WiFi/OTA/NTP e pulsanti in un unico file, difficile da navigare e da modificare.
+
+Il branch `refactor/split-main` suddivide il progetto in moduli (`include/` + `src/`): dati puri in header dedicati (configurazione, mappa EEPROM, tabelle parole, font, HTML), utility come classi a metodi statici (`Canvas`, `TimeUtils`, `Settings`, `ClockDisplay`, `ScrollText`, `WebUI`, `Network`, `Buttons`, `Presets`, `App`) e un file per ogni effetto in `src/effects/` con metodi `init()`/`update()`/`reset()`. `main.cpp` si riduce a ~90 righe.
+
+Il refactor è **puramente strutturale**: spostamenti meccanici di codice, nessun cambio di logica. Layout EEPROM (le impostazioni salvate restano compatibili), route web e HTML sono invariati byte per byte; le dimensioni del firmware differiscono dalla baseline di ~0,1%. In attesa di validazione su hardware prima di un eventuale merge in `main`.
+
+---
+
 ## 🧾 Licenza
 
 Questo progetto segue la licenza del progetto originale, ovvero è distribuito con licenza Creative Commons – Attribuzione – Non Commerciale 4.0 Internazionale (CC BY-NC 4.0).
