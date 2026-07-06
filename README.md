@@ -23,7 +23,7 @@ Per schema, stampa3d e riferimenti: [SurvivalHacking/Oraquadra2](https://github.
 - **Entrambi tenuti 5 s:** reset configurazione WiFi
 - **Uno tenuto 6 s:** attiva/disattiva il quadrante digitale alternato
 
-Impostare `BUTTON_LOGIC_INVERTED` in `main.cpp`:
+Impostare `BUTTON_LOGIC_INVERTED` in `include/config.h` (su `main`: in `main.cpp`):
 - `1` — pulsanti normali NA verso GND (pull-up interno)
 - `0` — pulsanti touch (pull-down)
 
@@ -113,7 +113,7 @@ void handleSetScrollTextRainbow();
 | Branch | Contenuto |
 |---|---|
 | `main` | Porting PlatformIO del codice originale: tutto il codice in un unico `src/main.cpp` (~6700 righe), fedele allo sketch Arduino di partenza |
-| `refactor/split-main` | Refactor strutturale: lo stesso codice suddiviso in ~58 file per area funzionale |
+| `refactor/split-main` | **(questo branch)** Refactor strutturale: lo stesso codice suddiviso in ~58 file per area funzionale |
 
 ### Perché esiste `refactor/split-main`
 
@@ -122,6 +122,33 @@ Il codice originale concentra tutto in `main.cpp`: 12 effetti, web server con ~2
 Il branch `refactor/split-main` suddivide il progetto in moduli (`include/` + `src/`): dati puri in header dedicati (configurazione, mappa EEPROM, tabelle parole, font, HTML), utility come classi a metodi statici (`Canvas`, `TimeUtils`, `Settings`, `ClockDisplay`, `ScrollText`, `WebUI`, `Network`, `Buttons`, `Presets`, `App`) e un file per ogni effetto in `src/effects/` con metodi `init()`/`update()`/`reset()`. `main.cpp` si riduce a ~90 righe.
 
 Il refactor è **puramente strutturale**: spostamenti meccanici di codice, nessun cambio di logica. Layout EEPROM (le impostazioni salvate restano compatibili), route web e HTML sono invariati byte per byte; le dimensioni del firmware differiscono dalla baseline di ~0,1%. In attesa di validazione su hardware prima di un eventuale merge in `main`.
+
+### Struttura dei moduli (questo branch)
+
+```
+include/                       src/
+  config.h        pin, matrice, ID modalità, tuning effetti
+  eeprom_map.h    indirizzi EEPROM (layout invariato)
+  state.h         stato globale condiviso (extern)     state.cpp
+  words_it.h      tabelle parole italiane (PROGMEM)    words_it.cpp
+  fonts.h         font 5x7 e 3x5 (PROGMEM)             fonts.cpp
+  webpage.h       pagina HTML interfaccia web          webpage.cpp
+  clock_colors.h  gestione colori (ClockColors)        clock_colors.cpp
+  led_canvas.h    Canvas: mapping serpentina, caratteri led_canvas.cpp
+  time_utils.h    TimeUtils: fasce giorno/notte, NTP   time_utils.cpp
+  settings.h      Settings: persistenza EEPROM         settings.cpp
+  clock_display.h ClockDisplay: orologio a parole      clock_display.cpp
+  scroll_text.h   ScrollText: testo scorrevole         scroll_text.cpp
+  web_ui.h        WebUI: server HTTP + handler         web_ui.cpp
+  network.h       Network: WiFiManager, OTA            network.cpp
+  buttons.h       Buttons: pulsanti fisici             buttons.cpp
+  presets.h       Presets: applicazione preset         presets.cpp
+  app.h           App: corpo di setup() e loop()       app.cpp
+  effects/        un file per effetto (fade, slow, matrix, matrix2,
+                  tron, drop, rainbow, moto, galaga, pacman, digitale,
+                  overlay digitale) + Effects (dispatch e reset al minuto)
+src/main.cpp      ~90 righe: changelog + setup()/loop() che delegano ad App
+```
 
 ---
 
