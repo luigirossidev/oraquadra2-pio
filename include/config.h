@@ -10,7 +10,8 @@
 // Il codice originale usava GPIO 6 e 7 (validi su ESP32-C3, non su ESP32 standard).
 #define LED_PIN      5     // Pin per matrice LED (GPIO 5 e' sicuro su ESP32 standard)
 #define BUTTON_MODE  18    // Pulsante modi     (cambia con il pin fisico che usi)
-#define BUTTON_SEC   19    // Pulsante lampeggio (cambia con il pin fisico che usi)
+#define BUTTON_SEC   19    // Pulsante frase/indovinello (cambia con il pin fisico che usi)
+#define BUZZER_PIN   25    // Buzzer passivo per jukebox FreeClock (GPIO 5 e' occupato dai LED)
 
 #define NUM_LEDS    256   // Totale LED matrice
 #define LED_TYPE    WS2812B

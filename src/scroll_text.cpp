@@ -127,6 +127,38 @@ void ScrollText::show(String text, CRGB color, uint16_t scrollSpeed) {
   }
 }
 
+// Converte il testo in maiuscolo e sostituisce le lettere accentate UTF-8 con
+// l'equivalente ASCII; scarta tutto cio' che il font non sa disegnare.
+// (Spostata qui dall'ex handler web handleSetScrollText.)
+String ScrollText::sanitize(String raw) {
+    raw.toUpperCase();
+
+    String out = "";
+    for (unsigned int i = 0; i < raw.length(); i++) {
+        char c = raw.charAt(i);
+        // Sostituisci lettere accentate comuni (UTF-8)
+        if (c == (char)0xC3) { // Primo byte UTF-8 per lettere accentate
+            i++;
+            if (i < raw.length()) {
+                char c2 = raw.charAt(i);
+                if (c2 == (char)0x80 || c2 == (char)0xA0) c = 'A';      // A' a'
+                else if (c2 == (char)0x88 || c2 == (char)0xA8) c = 'E'; // E' e'
+                else if (c2 == (char)0x89 || c2 == (char)0xA9) c = 'E'; // E' e'
+                else if (c2 == (char)0x8C || c2 == (char)0xAC) c = 'I'; // I' i'
+                else if (c2 == (char)0x92 || c2 == (char)0xB2) c = 'O'; // O' o'
+                else if (c2 == (char)0x99 || c2 == (char)0xB9) c = 'U'; // U' u'
+                else c = '?';
+                out += c;
+            }
+        } else if (c >= 32 && c <= 126) {
+            if (c >= 'a' && c <= 'z') c = c - 32;
+            out += c;
+        }
+        // Ignora altri caratteri non ASCII
+    }
+    return out;
+}
+
 // Nomi dei giorni della settimana in italiano / Italian weekday names
 const char* giorniSettimana[] = {"DOMENICA", "LUNEDI'", "MARTEDI'", "MERCOLEDI'", "GIOVEDI'", "VENERDI'", "SABATO"};
 // Nomi dei mesi in italiano / Italian month names

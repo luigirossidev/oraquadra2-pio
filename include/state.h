@@ -67,9 +67,6 @@ extern CRGB leds[NUM_LEDS];
 extern CRGB matrixWordColor;
 extern Timezone myTZ;
 
-// Server web inizializzato
-extern bool webInitialized;
-
 // Variabili globali stato / Global state variables
 extern uint8_t currentMode;
 extern uint8_t currentHour;

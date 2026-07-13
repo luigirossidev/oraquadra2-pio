@@ -1,7 +1,6 @@
 #include "presets.h"
-#include <EEPROM.h>
 #include <FastLED.h>
-#include "eeprom_map.h"
+#include "fc_config.h"
 #include "config.h"
 #include "state.h"
 #include "clock_colors.h"
@@ -166,10 +165,7 @@ void Presets::apply(uint8_t preset) {
    FastLED.setBrightness(intBrightness);  // Mantiene la luminosità corretta
    ClockDisplay::updateDisplay();
    
-   uint16_t baseAddr = EEPROM_MODE_SETTINGS_START + (preset * EEPROM_MODE_SETTINGS_SIZE);
-   uint8_t marker = EEPROM.read(baseAddr);
-    
-   if (marker != EEPROM_MODE_MARKER) {
+   if (preset < FC_NUM_PRESETS && !config.presets[preset].saved) {
        // preset / preset
        Settings::saveModeSettings(preset);
        Serial.print("Impostazioni auto-salvate per preset: ");

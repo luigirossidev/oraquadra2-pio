@@ -1,13 +1,19 @@
 #include "buttons.h"
 #include <Arduino.h>
-#include <EEPROM.h>
-#include "eeprom_map.h"
+#include "fc_config.h"
 #include "config.h"
 #include "state.h"
-#include "network.h"
 #include "presets.h"
+#include "daily_content.h"
+#include "melody_player.h"
 
 // [GESTIONE PULSANTI E TEMPI DI RILASCIO]
+//
+// MODE breve:  preset successivo
+// MODE lungo:  toggle quadrante digitale alternato
+// SEC  breve:  frase del giorno -> indovinello (il toggle blink e' passato all'app)
+// SEC  lungo:  mostra il PIN BLE per il pairing con l'app
+// Entrambi 5s: factory reset (cancella settings.json e riavvia)
 
 void Buttons::check() {
     static uint32_t lastAction = 0;
@@ -18,13 +24,12 @@ void Buttons::check() {
     static bool modeLongDone = false;
     static bool colorLongDone = false;
 
-    // NUOVI FLAG (essenziali per correggere la tua logica)
     static bool modeWasPressed = false;
     static bool colorWasPressed = false;
 
     const uint32_t DEBOUNCE_TIME = 300;
-    const uint32_t RESET_WIFI_TIME = 5000;
-    const uint32_t DIGITAL_TOGGLE_TIME = 6000;
+    const uint32_t FACTORY_RESET_TIME = 5000;
+    const uint32_t LONG_PRESS_TIME = 6000;
 
 #if BUTTON_LOGIC_INVERTED == 1
     bool isMode = !digitalRead(BUTTON_MODE);
@@ -36,16 +41,23 @@ void Buttons::check() {
 
     uint32_t now = millis();
 
+    // Qualsiasi pressione ferma una melodia del jukebox in corso
+    if ((isMode || isColor) && melodyPlayerIsActive()) {
+        melodyPlayerAbort();
+    }
+
     /*
-     * 1) PRESSIONE CONTEMPORANEA PER RESET WIFI
+     * 1) PRESSIONE CONTEMPORANEA PER FACTORY RESET
      */
     if (isMode && isColor) {
         if (bothPressStart == 0) {
             bothPressStart = now;
-            Serial.println("Inizio conteggio reset WiFi...");
+            Serial.println("Inizio conteggio factory reset...");
         }
-        if (now - bothPressStart >= RESET_WIFI_TIME) {
-            Network::resetWiFi();
+        if (now - bothPressStart >= FACTORY_RESET_TIME) {
+            Serial.println("FACTORY RESET");
+            factoryResetConfigurations();
+            ESP.restart();
         }
         return;  // blocca tutto il resto
     } else {
@@ -63,11 +75,10 @@ void Buttons::check() {
             modeWasPressed = true;
         }
 
-        // pressione lunga
-        if (!modeLongDone && (now - modePressStart >= DIGITAL_TOGGLE_TIME)) {
+        // pressione lunga: toggle quadrante digitale
+        if (!modeLongDone && (now - modePressStart >= LONG_PRESS_TIME)) {
             digitalOverlayEnabled = !digitalOverlayEnabled;
-            EEPROM.write(EEPROM_DIGITAL_OVERLAY_ADDR, digitalOverlayEnabled);
-            EEPROM.commit();
+            writeConfigurations();
             Serial.println(digitalOverlayEnabled ? "Overlay ABILITATO (MODE)" : "Overlay DISABILITATO (MODE)");
             modeLongDone = true;
         }
@@ -77,14 +88,13 @@ void Buttons::check() {
         // rilascio del pulsante MODE
         if (modeWasPressed) {
 
-            // pressione breve SOLO se non c'è stata lunga
-            if (!modeLongDone && (now - modePressStart < DIGITAL_TOGGLE_TIME)
+            // pressione breve SOLO se non c'e' stata lunga
+            if (!modeLongDone && (now - modePressStart < LONG_PRESS_TIME)
                 && now - lastAction > DEBOUNCE_TIME) {
 
                 currentPreset = (currentPreset + 1) % 19;
                 Presets::apply(currentPreset);
-                EEPROM.write(EEPROM_PRESET_ADDR, currentPreset);
-                EEPROM.commit();
+                writeConfigurations();
                 Serial.println("Preset -> " + String(currentPreset));
 
                 lastAction = now;
@@ -98,7 +108,7 @@ void Buttons::check() {
 
 
     /*
-     * 3) GESTIONE PULSANTE COLOR
+     * 3) GESTIONE PULSANTE SEC (frase/indovinello + PIN BLE)
      */
     if (isColor && !isMode) {
 
@@ -108,27 +118,23 @@ void Buttons::check() {
             colorWasPressed = true;
         }
 
-        // pressione lunga
-        if (!colorLongDone && (now - colorPressStart >= DIGITAL_TOGGLE_TIME)) {
-            digitalOverlayEnabled = !digitalOverlayEnabled;
-            EEPROM.write(EEPROM_DIGITAL_OVERLAY_ADDR, digitalOverlayEnabled);
-            EEPROM.commit();
-            Serial.println(digitalOverlayEnabled ? "Overlay ABILITATO (SEC)" : "Overlay DISABILITATO (SEC)");
+        // pressione lunga: mostra il PIN BLE
+        if (!colorLongDone && (now - colorPressStart >= LONG_PRESS_TIME)) {
+            DailyContent::requestShowPin();
+            Serial.println("Richiesta visualizzazione PIN BLE (SEC)");
             colorLongDone = true;
         }
 
     } else {
 
-        // rilascio del pulsante COLOR
+        // rilascio del pulsante SEC
         if (colorWasPressed) {
 
-            if (!colorLongDone && (now - colorPressStart < DIGITAL_TOGGLE_TIME)
+            if (!colorLongDone && (now - colorPressStart < LONG_PRESS_TIME)
                 && now - lastAction > DEBOUNCE_TIME) {
 
-                currentBlink = (currentBlink == 0) ? 1 : 0;
-                EEPROM.write(EEPROM_BLINK_ADDR, currentBlink);
-                EEPROM.commit();
-                Serial.println(currentBlink ? "Blink ON" : "Blink OFF");
+                DailyContent::requestQuoteQuiz();
+                Serial.println("Richiesta frase/indovinello (SEC)");
 
                 lastAction = now;
             }

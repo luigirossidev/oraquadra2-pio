@@ -2,10 +2,10 @@
 
 #include <Arduino.h>
 
-// Persistenza impostazioni su EEPROM
+// Persistenza impostazioni su SPIFFS (/settings.json, vedi fc_config)
 class Settings {
 public:
-    static void begin();   // EEPROM.begin + prima configurazione + caricamento valori
+    static void begin();   // mount SPIFFS + caricamento configurazione nelle globali
     static void saveModeSettings(uint8_t mode);
     static void loadModeSettings(uint8_t mode);
 };

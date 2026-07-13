@@ -59,8 +59,6 @@ CRGB leds[NUM_LEDS];
 CRGB matrixWordColor = CRGB::Blue;
 Timezone myTZ;
 
-bool webInitialized = false;
-
 // Variabili globali stato / Global state variables
 uint8_t currentMode = MODE_FAST;
 uint8_t currentHour = 0;

@@ -7,6 +7,7 @@
 class ScrollText {
 public:
     static void show(String text, CRGB color, uint16_t scrollSpeed);  // bloccante (boot)
+    static String sanitize(String raw);  // maiuscole + accentate UTF-8 -> ASCII stampabile
     static String buildTextualTime();
     static String buildTextualDate();
     static String buildDisplayText();
