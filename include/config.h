@@ -18,6 +18,8 @@
 #define COLOR_ORDER GRB
 #define BRIGHTNESS_DAY   64
 #define BRIGHTNESS_NIGHT 32
+#define LED_MAX_POWER_MA 500  // Limite corrente LED (mA a 5V): FastLED riduce la luminosita' se superato.
+                              // 500 mA = alimentazione da USB/VIN dell'ESP32; alzalo con un alimentatore dedicato.
 #define MATRIX_WIDTH  16
 #define MATRIX_HEIGHT 16
 

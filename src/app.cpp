@@ -86,6 +86,7 @@ void App::setup() {
 
    FastLED.addLeds<LED_TYPE, LED_PIN, COLOR_ORDER>(leds, NUM_LEDS)
           .setCorrection(TypicalLEDStrip);
+   FastLED.setMaxPowerInVoltsAndMilliamps(5, LED_MAX_POWER_MA);
 
    FastLED.setBrightness(intBrightness);
    FastLED.clear();

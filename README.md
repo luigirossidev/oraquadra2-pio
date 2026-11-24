@@ -19,6 +19,45 @@ Su questo branch (`feature/freeclock-oraquadra`) il progetto è integrato nell'e
 | Pulsante SEC | GPIO 19 |
 | Buzzer passivo | GPIO 25 (jukebox FreeClock) |
 
+### Collegamenti
+
+```
+                 ┌────────────────────┐
+Alimentatore 5V  │                    │
+  (+) ───────────┼──► rosso centrale  │
+  (–) ───┬───────┼──► nero centrale   │   Matrice 16×16 WS2812B
+         │       │                    │
+         │       │    connettore IN:  │
+ESP32    │       │                    │
+  GND ───┴───────┼──► GND             │
+  GPIO 5 ──[330Ω]┼──► DIN             │
+                 └────────────────────┘
+
+ESP32 GPIO 18 ──► pulsante MODE ──► GND
+ESP32 GPIO 19 ──► pulsante SEC  ──► GND
+ESP32 GPIO 25 ──► buzzer passivo (+), (–) ──► GND
+```
+
+| ESP32 | Collegato a | Note |
+|---|---|---|
+| GPIO 5 | **DIN** della matrice (connettore IN) | Resistenza da 330 Ω in serie, vicino alla matrice |
+| GND | GND matrice / alimentatore | **Massa comune obbligatoria** tra ESP32, matrice e alimentatore |
+| VIN (5V) | +5V alimentatore | Facoltativo: alimenta l'ESP32 dallo stesso alimentatore (mai sul pin 3V3) |
+| GPIO 18 | Pulsante MODE → GND | Pull-up interno, nessuna resistenza esterna (con `BUTTON_LOGIC_INVERTED 1`) |
+| GPIO 19 | Pulsante SEC → GND | Come sopra |
+| GPIO 25 | Buzzer passivo (+) | Il polo (–) va a GND. Serve un buzzer **passivo**: uno attivo suonerebbe una sola nota |
+
+**I fili della matrice.** La matrice ha tre gruppi di fili:
+- **Connettore IN** (3 pin: +5V, DIN, GND): è l'ingresso e va collegato all'ESP32. Lo riconosci dalla scritta **DIN** o dalle frecce stampate sul retro del circuito.
+- **Coppia centrale rosso/nero:** è l'alimentazione e va all'alimentatore 5V.
+- **Connettore OUT** (DOUT): serve solo per collegare un'altra matrice in cascata. Va lasciato libero.
+
+**Alimentazione.**
+- **Con alimentatore dedicato** (consigliato per l'uso definitivo): usa un alimentatore 5V da almeno 4 A e metti un condensatore da 1000 µF (≥ 6,3 V) tra +5V e GND, vicino ai fili centrali. Poi alza `LED_MAX_POWER_MA` in `include/config.h` (es. 3000 con un alimentatore da 4 A).
+- **Solo da USB** (va bene per sviluppo e prove): collega il +5V della matrice al pin **VIN** dell'ESP32. Il firmware limita i LED a `LED_MAX_POWER_MA` (500 mA di default): oltre quel valore FastLED abbassa da sola la luminosità, così l'ESP32 non va in brownout. Usa un caricatore USB da 2 A invece della porta del PC.
+
+**Livelli logici.** L'ESP32 manda i dati a 3,3 V e di solito la matrice li legge senza problemi. Se vedi sfarfallii o colori casuali, aggiungi un level shifter (es. 74AHCT125) sul filo dati.
+
 ### Pulsanti
 
 - **Pulsante MODE (breve):** cambia preset/effetto
