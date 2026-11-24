@@ -48,7 +48,9 @@ bool Network::connect() {
    FastLED.clear();
    FastLED.show();
 
-   WiFi.setSleep(false);
+   // Niente WiFi.setSleep(false): con il BLE sempre attivo il driver richiede
+   // il modem sleep per la coesistenza radio, altrimenti va in abort() e riavvia.
+   WiFi.setSleep(true);
    WiFi.setAutoReconnect(true);
    return true;
 }
